@@ -73,6 +73,10 @@ th{font-size:.78rem;color:var(--muted);font-weight:600}
 .tag.encurso{background:var(--void);color:#111}
 .tag.cashout,.tag.ingreso{background:#5b8def;color:#06142e}
 .tag.retirada{background:#a78bfa;color:#140a33}
+.tag.bono{background:var(--void);color:#111}
+.tag.jgan{background:var(--win);color:#04130c}
+.tag.jper{background:var(--loss);color:#1a0505}
+.tabla-sm table{font-size:.82rem}
 .tag.ganada{background:var(--win)} .tag.perdida{background:var(--loss)} .tag.anulada{background:var(--void)}
 .bet .mid{flex:1;min-width:0;font-size:.9rem}
 .bet .mid small{color:var(--muted);display:block}
@@ -128,7 +132,7 @@ header,main{position:relative;z-index:1}
 <section class="card hero" aria-live="polite">
   <div class="lbl" id="periodo">Todo el historial</div>
   <div class="big" id="neto">0,00 €</div>
-  <div class="lbl">Resultado neto (ganancias − importe)</div>
+  <div class="lbl">Neto de apuestas (ganancias − importe)</div>
   <div class="grid">
     <div class="stat"><div class="lbl">Bruto cobrado</div><div class="val" id="bruto">0,00 €</div></div>
     <div class="stat"><div class="lbl">Total apostado</div><div class="val" id="apostado">0,00 €</div></div>
@@ -139,6 +143,7 @@ header,main{position:relative;z-index:1}
   </div>
   <div class="grid"><div class="stat"><div class="lbl">En juego (en curso)</div><div class="val" id="enJuego">Ninguna</div></div><div class="stat"><div class="lbl">Cashout (cerradas)</div><div class="val" id="cashStat">Ninguna</div></div></div>
   <div class="grid"><div class="stat"><div class="lbl">Ingresado (periodo)</div><div class="val" id="hIng">0,00 €</div></div><div class="stat"><div class="lbl">Retirado (periodo)</div><div class="val" id="hRet">0,00 €</div></div></div>
+  <div class="grid"><div class="stat"><div class="lbl">Bonos y casino/póker (periodo)</div><div class="val" id="hExtra">0,00 €</div></div><div class="stat"><div class="lbl">Beneficio total (periodo)</div><div class="val" id="hTotal">0,00 €</div></div></div>
   <div class="stat" style="margin-top:8px"><div class="lbl">Saldo estimado en la casa</div><div class="val" id="hSaldo">0,00 €</div></div>
   <div class="row" style="margin-top:12px">
     <div><label for="desde">Desde</label><input type="date" id="desde"></div>
@@ -198,11 +203,13 @@ header,main{position:relative;z-index:1}
 </div>
 
 <div class="tab" id="tab-caja" hidden>
-<h2>Ingresos y retiradas</h2>
+<h2>Caja</h2>
 <section class="card">
   <div class="grid" style="margin-top:0"><div class="stat"><div class="lbl">Total ingresado</div><div class="val" id="cIng">0,00 €</div></div><div class="stat"><div class="lbl">Total retirado</div><div class="val" id="cRet">0,00 €</div></div></div>
+  <div class="grid"><div class="stat"><div class="lbl">Bonos</div><div class="val" id="cBono">0,00 €</div></div><div class="stat"><div class="lbl">Casino/póker (neto)</div><div class="val" id="cJuego">0,00 €</div></div></div>
+  <div class="stat" style="margin-top:8px"><div class="lbl">Beneficio total (apuestas + bonos + casino/póker)</div><div class="val" id="cTotal">0,00 €</div></div>
   <div class="stat" style="margin-top:8px"><div class="lbl">Saldo estimado en la casa</div><div class="val" id="cSaldo">0,00 €</div></div>
-  <p class="hint">Saldo estimado = ingresos − retiradas + neto de las apuestas − lo que tienes en juego. Compáralo con tu saldo real: si no coincide, falta algún ingreso, retirada o apuesta.</p>
+  <p class="hint">Saldo estimado = ingresos − retiradas + bonos + casino/póker (ganado − perdido) + neto de las apuestas − lo que tienes en juego. Compáralo con tu saldo real: si no coincide, falta algún ingreso, retirada o apuesta.</p>
   <label for="cReal" style="margin-top:10px">Saldo real de la casa (el que ves en su app)</label>
   <div class="row"><input id="cReal" inputmode="decimal" placeholder="Ej. 189,50"><button class="sec" id="cRealBtn" type="button">Comparar</button></div>
   <div class="status" id="cDif" style="white-space:pre-line"></div>
@@ -210,7 +217,7 @@ header,main{position:relative;z-index:1}
 <h2>Añadir movimiento</h2>
 <section class="card">
   <div class="row">
-    <div><label for="cTipo">Tipo (ingreso = meto dinero)</label><select id="cTipo"><option value="ingreso">Ingreso</option><option value="retirada">Retirada</option></select></div>
+    <div style="flex:1 1 100%"><label for="cTipo">Tipo</label><select id="cTipo"><option value="ingreso">Ingreso (meto dinero)</option><option value="retirada">Retirada (saco dinero)</option><option value="bono">Bono</option><option value="jgan">Casino/póker: ganancia</option><option value="jper">Casino/póker: pérdida</option></select></div>
     <div><label for="cImporte">Importe €</label><input id="cImporte" inputmode="decimal" placeholder="50,00"></div>
     <div><label for="cFecha">Fecha</label><input type="date" id="cFecha"></div>
   </div>
@@ -220,14 +227,14 @@ header,main{position:relative;z-index:1}
   <div class="status" id="cMsg"></div>
 </section>
 <h2>Por mes</h2>
-<section class="card"><div id="cMes"></div></section>
+<section class="card tabla-sm"><div id="cMes"></div></section>
 <h2>Movimientos</h2>
 <section class="card"><div id="cLista"></div></section>
 <section class="card" style="margin-top:10px">
   <div class="row"><button class="sec" id="cBtnCsv">Exportar CSV</button><button class="sec" id="cBtnImp">Importar CSV</button></div>
   <input type="file" id="cCsvFile" accept=".csv,.txt,text/csv,text/plain" style="display:none">
   <div class="status" id="cImpMsg" style="white-space:pre-line"></div>
-  <p class="hint">Columnas del CSV: <b>fecha; tipo; importe; nota</b>. El tipo es ingreso o retirada. Las filas idénticas a una que ya tienes se omiten.</p>
+  <p class="hint">Columnas del CSV: <b>fecha; tipo; importe; nota</b>. El tipo puede ser: ingreso, retirada, bono, casino ganancia o casino perdida. Las filas idénticas a una que ya tienes se omiten.</p>
 </section>
 </div>
 
@@ -432,6 +439,8 @@ header,main{position:relative;z-index:1}
     var d0 = $('desde').value, h0 = $('hasta').value;
     var tm = totalesMov(movs.filter(function(m){ return (!d0 || m.fecha>=d0) && (!h0 || m.fecha<=h0); }));
     $('hIng').textContent = eur(tm.ing); $('hRet').textContent = eur(tm.ret);
+    $('hExtra').textContent = eur(tm.extra); $('hExtra').className = 'val '+(tm.extra>0?'pos':tm.extra<0?'neg':'');
+    var tt = r2(neto + tm.extra); $('hTotal').textContent = eur(tt); $('hTotal').className = 'val '+(tt>0?'pos':tt<0?'neg':'');
     var sh = saldoEstimado(); $('hSaldo').textContent = eur(sh); $('hSaldo').className = 'val '+(sh<0?'neg':'');
     renderCaja();
     if (editId && editFoco){ var ig = document.querySelector('.editor [data-ef="ganancias"]'); if (ig){ ig.focus(); ig.select(); } editFoco = false; }
@@ -951,7 +960,7 @@ header,main{position:relative;z-index:1}
         lista.forEach(function(b){ if (b && (b.fechaApuesta||b.dia) && b.estado){ if (addBet({fechaApuesta:b.fechaApuesta||b.dia, hora:b.hora||'', estado:b.estado, importe:+b.importe||0, ganancias:+b.ganancias||0, ref:b.ref||''})) n++; else dups++; } });
         (Array.isArray(data) ? [] : (data.movs||[])).forEach(function(m){
           var imp = +m.importe;
-          if (m && m.fecha && (m.tipo==='ingreso' || m.tipo==='retirada') && imp>0 && !movs.some(function(x){ return x.fecha===m.fecha && x.tipo===m.tipo && x.importe===imp && (x.nota||'')===(m.nota||''); })){
+          if (m && m.fecha && TIPOS[m.tipo] && imp>0 && !movs.some(function(x){ return x.fecha===m.fecha && x.tipo===m.tipo && x.importe===imp && (x.nota||'')===(m.nota||''); })){
             movs.push({id:Date.now()*1000+(idSeq++ % 1000), fecha:m.fecha, tipo:m.tipo, importe:imp, nota:m.nota||''}); nm++;
           }
         });
@@ -966,15 +975,38 @@ header,main{position:relative;z-index:1}
   };
 
   // ---------- Caja: ingresos y retiradas ----------
-  function totalesMov(lista){
-    var i = 0, r = 0;
-    lista.forEach(function(m){ if (m.tipo==='ingreso') i += m.importe; else r += m.importe; });
-    return {ing: Math.round(i*100)/100, ret: Math.round(r*100)/100};
+  var TIPOS = {ingreso:'Ingreso', retirada:'Retirada', bono:'Bono', jgan:'Casino/póker +', jper:'Casino/póker −'};
+  var TIPO_CSV = {ingreso:'ingreso', retirada:'retirada', bono:'bono', jgan:'casino ganancia', jper:'casino perdida'};
+  function tipoDe(texto){
+    var t = quitaAcentos(texto);
+    if (TIPOS[t]) return t;
+    if (/bono|bonus|promo/.test(t)) return 'bono';
+    if (/casino|poker|juego/.test(t)){
+      if (/perd|loss|lost|menos/.test(t)) return 'jper';
+      if (/gan|win|premio|mas/.test(t)) return 'jgan';
+      return '';
+    }
+    if (/^(ing|dep|recarga|add)/.test(t)) return 'ingreso';
+    if (/^(ret|with|cobro|sac)/.test(t)) return 'retirada';
+    return '';
   }
+  function r2(x){ return Math.round(x*100)/100; }
+  function totalesMov(lista){
+    var t = {ing:0, ret:0, bono:0, jgan:0, jper:0};
+    lista.forEach(function(m){
+      if (m.tipo==='ingreso') t.ing += m.importe; else if (m.tipo==='retirada') t.ret += m.importe;
+      else if (m.tipo==='bono') t.bono += m.importe; else if (m.tipo==='jgan') t.jgan += m.importe; else if (m.tipo==='jper') t.jper += m.importe;
+    });
+    t.ing = r2(t.ing); t.ret = r2(t.ret); t.bono = r2(t.bono); t.jgan = r2(t.jgan); t.jper = r2(t.jper);
+    t.juego = r2(t.jgan - t.jper);          // casino/póker neto
+    t.extra = r2(t.bono + t.jgan - t.jper); // bonos + casino/póker
+    return t;
+  }
+  function netoApuestas(){ var n = 0; bets.forEach(function(b){ n += netoDe(b); }); return r2(n); }
   function saldoEstimado(){
-    var t = totalesMov(movs), neto = 0, juego = 0;
-    bets.forEach(function(b){ neto += netoDe(b); if (b.estado==='encurso') juego += b.importe; });
-    return Math.round((t.ing - t.ret + neto - juego)*100)/100;
+    var t = totalesMov(movs), juego = 0;
+    bets.forEach(function(b){ if (b.estado==='encurso') juego += b.importe; });
+    return r2(t.ing - t.ret + t.extra + netoApuestas() - juego);
   }
   var REALKEY = 'jp_saldo_real', real = null;
   try { real = JSON.parse(localStorage.getItem(REALKEY) || 'null'); } catch(e){ real = null; }
@@ -1005,20 +1037,31 @@ header,main{position:relative;z-index:1}
     saveMovs(); render();
   };
   function renderCaja(){
-    var t = totalesMov(movs), sa = saldoEstimado();
+    var t = totalesMov(movs), sa = saldoEstimado(), nb = netoApuestas();
     $('cIng').textContent = eur(t.ing); $('cRet').textContent = eur(t.ret);
+    $('cBono').textContent = eur(t.bono);
+    $('cJuego').textContent = eur(t.juego); $('cJuego').className = 'val '+(t.juego>0?'pos':t.juego<0?'neg':'');
+    var tot = r2(nb + t.extra); $('cTotal').textContent = eur(tot); $('cTotal').className = 'val '+(tot>0?'pos':tot<0?'neg':'');
     $('cSaldo').textContent = eur(sa); $('cSaldo').className = 'val '+(sa<0?'neg':'');
     renderDif();
     var M = {};
-    movs.forEach(function(m){ var k=m.fecha.slice(0,7), o = M[k] || (M[k]={ing:0,ret:0,neto:0}); if (m.tipo==='ingreso') o.ing += m.importe; else o.ret += m.importe; });
-    bets.forEach(function(b){ var d = diaDe(b); if (!d) return; var k=d.slice(0,7), o = M[k] || (M[k]={ing:0,ret:0,neto:0}); o.neto += netoDe(b); });
+    function mes(k){ return M[k] || (M[k] = {ing:0, ret:0, extra:0, neto:0}); }
+    movs.forEach(function(m){
+      var o = mes(m.fecha.slice(0,7));
+      if (m.tipo==='ingreso') o.ing += m.importe; else if (m.tipo==='retirada') o.ret += m.importe;
+      else if (m.tipo==='bono' || m.tipo==='jgan') o.extra += m.importe; else if (m.tipo==='jper') o.extra -= m.importe;
+    });
+    bets.forEach(function(b){ var d = diaDe(b); if (!d) return; mes(d.slice(0,7)).neto += netoDe(b); });
     var ks = Object.keys(M).sort().reverse();
-    $('cMes').innerHTML = ks.length ? '<table><tr><th>Mes</th><th>Ingresos</th><th>Retiradas</th><th>Neto apuestas</th></tr>'+
-      ks.map(function(k){ var o=M[k]; return '<tr><td>'+etiquetaMes(k)+'</td><td>'+eur(o.ing)+'</td><td>'+eur(o.ret)+'</td><td class="'+(o.neto>0?'pos':o.neto<0?'neg':'')+'">'+eur(o.neto)+'</td></tr>'; }).join('')+'</table>' : '<div class="empty">Aquí irá el resumen de cada mes.</div>';
+    $('cMes').innerHTML = ks.length ? '<table><tr><th>Mes</th><th>Ingresos</th><th>Retiradas</th><th>Bonos/casino</th><th>Apuestas</th></tr>'+
+      ks.map(function(k){ var o = M[k], ex = r2(o.extra), ne = r2(o.neto);
+        return '<tr><td>'+etiquetaMes(k)+'</td><td>'+eur(o.ing)+'</td><td>'+eur(o.ret)+'</td><td class="'+(ex>0?'pos':ex<0?'neg':'')+'">'+eur(ex)+'</td><td class="'+(ne>0?'pos':ne<0?'neg':'')+'">'+eur(ne)+'</td></tr>'; }).join('')+'</table>' : '<div class="empty">Aquí irá el resumen de cada mes.</div>';
+    var SIG = {bono:'+', jgan:'+', jper:'−'};
     var ord = movs.slice().sort(function(a,b){ return a.fecha<b.fecha?1:a.fecha>b.fecha?-1:b.id-a.id; });
     $('cLista').innerHTML = ord.length ? ord.map(function(m){
-      return '<div class="bet"><span class="tag '+m.tipo+'">'+(m.tipo==='ingreso'?'Ingreso':'Retirada')+'</span><div class="mid">'+eur(m.importe)+'<small>'+fmtDia(m.fecha)+(m.nota?' · '+esc(m.nota):'')+'</small></div><button class="del" data-mdel="'+m.id+'" aria-label="Borrar movimiento">Borrar</button></div>';
-    }).join('') : '<div class="empty">Aún no has apuntado ingresos ni retiradas.</div>';
+      var et = TIPOS[m.tipo] || m.tipo;
+      return '<div class="bet"><span class="tag '+m.tipo+'">'+et+'</span><div class="mid">'+(SIG[m.tipo]||'')+eur(m.importe)+'<small>'+fmtDia(m.fecha)+(m.nota?' · '+esc(m.nota):'')+'</small></div><button class="del" data-mdel="'+m.id+'" aria-label="Borrar movimiento">Borrar</button></div>';
+    }).join('') : '<div class="empty">Aún no has apuntado movimientos.</div>';
   }
   $('cFecha').value = today();
   $('cAdd').onclick = function(){
@@ -1033,9 +1076,9 @@ header,main{position:relative;z-index:1}
   };
   $('cBtnCsv').onclick = function(){
     var rows = ['fecha;tipo;importe;nota'].concat(movs.slice().sort(function(a,b){ return a.fecha<b.fecha?-1:1; }).map(function(m){
-      return [m.fecha, m.tipo, String(m.importe).replace('.',','), '"'+String(m.nota||'').replace(/"/g,'""')+'"'].join(';');
+      return [m.fecha, TIPO_CSV[m.tipo]||m.tipo, String(m.importe).replace('.',','), '"'+String(m.nota||'').replace(/"/g,'""')+'"'].join(';');
     }));
-    download('ingresos-retiradas.csv', '\ufeff'+rows.join('\n'), 'text/csv');
+    download('movimientos-caja.csv', '\ufeff'+rows.join('\n'), 'text/csv');
   };
   var COLM = {fecha:['fecha','dia'], tipo:['tipo','movimiento'], importe:['importe','cantidad','monto'], nota:['nota','concepto','descripcion']};
   function importarMovs(texto){
@@ -1048,7 +1091,7 @@ header,main{position:relative;z-index:1}
     var nuevos=0, dup=0, errores=[];
     for (var n=1;n<lineas.length;n++){
       var c = partirLinea(lineas[n], sep), g = function(k){ return idx[k]===undefined ? '' : (c[idx[k]]||''); };
-      var t = quitaAcentos(g('tipo')), tipo = /^(ing|dep|recarga|add)/.test(t) ? 'ingreso' : (/^(ret|with|cobro|sac)/.test(t) ? 'retirada' : '');
+      var tipo = tipoDe(g('tipo'));
       var imp = Math.abs(num(g('importe'))), fecha = leerPie(g('fecha')).fecha, nota = g('nota');
       if (!tipo){ errores.push('Fila '+(n+1)+': tipo no reconocido ("'+g('tipo')+'")'); continue; }
       if (!(imp>0)){ errores.push('Fila '+(n+1)+': importe no válido'); continue; }

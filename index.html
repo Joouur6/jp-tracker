@@ -70,6 +70,9 @@ th{font-size:.78rem;color:var(--muted);font-weight:600}
 .bar.n{background:var(--loss)}
 .bet{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
 .bet .tag{font-size:.72rem;font-weight:700;border-radius:6px;padding:2px 7px;color:#fff}
+.tag.encurso{background:var(--void);color:#111}
+.tag.cashout,.tag.ingreso{background:#5b8def;color:#06142e}
+.tag.retirada{background:#a78bfa;color:#140a33}
 .tag.ganada{background:var(--win)} .tag.perdida{background:var(--loss)} .tag.anulada{background:var(--void)}
 .bet .mid{flex:1;min-width:0;font-size:.9rem}
 .bet .mid small{color:var(--muted);display:block}
@@ -81,6 +84,11 @@ details summary{cursor:pointer}
 h3{font-size:.95rem;margin:16px 0 6px}
 tr.media2 td{border:0;color:var(--muted);padding-top:2px}
 .warn{background:var(--chip);border-left:4px solid var(--loss);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:.88rem}
+.bet.sinborde{border-bottom:0}
+.acc{display:flex;gap:6px;flex-wrap:wrap;padding:0 0 10px;border-bottom:1px solid var(--line)}
+.acc button{min-height:34px;font-size:.82rem;padding:0 12px}
+.acc .g{background:var(--win);color:#04130c} .acc .p{background:var(--loss);color:#1a0505}
+.editor{padding:10px 0;border-bottom:1px solid var(--line)}
 .brand{display:flex;align-items:center;gap:10px}
 .brand img{border-radius:50%;display:block}
 .brand small{display:block;font-size:.75rem;font-weight:400;color:var(--muted)}
@@ -106,6 +114,8 @@ header,main{position:relative;z-index:1}
 .tab>h2:first-child{margin-top:6px}
 .seg{display:flex;gap:6px;background:var(--chip);padding:4px;border-radius:12px;margin:4px 0 12px}
 .seg button{flex:1;min-height:38px;background:transparent;color:var(--muted);padding:0 4px}
+.seg.s5{gap:3px;padding:3px}
+.seg.s5 button{font-size:.78rem;padding:0 2px}
 .seg button.on{background:var(--card);color:var(--ink);box-shadow:0 0 0 1px var(--line)}
 @media (prefers-reduced-motion:no-preference){button{transition:opacity .15s}}
 </style>
@@ -122,11 +132,14 @@ header,main{position:relative;z-index:1}
   <div class="grid">
     <div class="stat"><div class="lbl">Bruto cobrado</div><div class="val" id="bruto">0,00 €</div></div>
     <div class="stat"><div class="lbl">Total apostado</div><div class="val" id="apostado">0,00 €</div></div>
-    <div class="stat"><div class="lbl">Pérdidas (apuestas perdidas)</div><div class="val neg" id="perdidas">0,00 €</div></div>
-    <div class="stat"><div class="lbl">Beneficio de las ganadas</div><div class="val pos" id="benGanadas">0,00 €</div></div>
+    <div class="stat"><div class="lbl">Pérdidas</div><div class="val neg" id="perdidas">0,00 €</div></div>
+    <div class="stat"><div class="lbl">Beneficio (en positivo)</div><div class="val pos" id="benGanadas">0,00 €</div></div>
     <div class="stat"><div class="lbl">Aciertos</div><div class="val" id="aciertos">0 / 0</div></div>
     <div class="stat"><div class="lbl">Rentabilidad (ROI)</div><div class="val" id="roi">0 %</div></div>
   </div>
+  <div class="grid"><div class="stat"><div class="lbl">En juego (en curso)</div><div class="val" id="enJuego">Ninguna</div></div><div class="stat"><div class="lbl">Cashout (cerradas)</div><div class="val" id="cashStat">Ninguna</div></div></div>
+  <div class="grid"><div class="stat"><div class="lbl">Ingresado (periodo)</div><div class="val" id="hIng">0,00 €</div></div><div class="stat"><div class="lbl">Retirado (periodo)</div><div class="val" id="hRet">0,00 €</div></div></div>
+  <div class="stat" style="margin-top:8px"><div class="lbl">Saldo estimado en la casa</div><div class="val" id="hSaldo">0,00 €</div></div>
   <div class="row" style="margin-top:12px">
     <div><label for="desde">Desde</label><input type="date" id="desde"></div>
     <div><label for="hasta">Hasta</label><input type="date" id="hasta"></div>
@@ -154,7 +167,7 @@ header,main{position:relative;z-index:1}
 <section class="card">
   <div class="row">
     <div><label for="mEstado">Estado</label>
-      <select id="mEstado"><option value="ganada">Ganada</option><option value="perdida">Perdida</option><option value="anulada">Anulada</option></select></div>
+      <select id="mEstado"><option value="ganada">Ganada</option><option value="perdida">Perdida</option><option value="anulada">Anulada</option><option value="cashout">Cerrada / cashout</option><option value="encurso">En curso (aún sin resultado)</option></select></div>
     <div><label for="mImporte">Importe €</label><input id="mImporte" inputmode="decimal" placeholder="5,00"></div>
     <div><label for="mGan">Ganancias €</label><input id="mGan" inputmode="decimal" placeholder="0,00"></div>
     <div><label for="mRef">Referencia (opcional)</label><input id="mRef" inputmode="numeric" placeholder="2991421945"></div>
@@ -180,7 +193,39 @@ header,main{position:relative;z-index:1}
 
 <div class="tab" id="tab-apuestas" hidden>
 <h2>Apuestas guardadas</h2>
+<div class="seg s5" id="segLista"><button type="button" data-lf="encurso">En curso</button><button type="button" data-lf="ganada">Ganadas</button><button type="button" data-lf="perdida">Perdidas</button><button type="button" data-lf="cashout">Cashout</button><button type="button" data-lf="cerradas">Resueltas</button></div>
 <section class="card"><div id="lista"></div></section>
+</div>
+
+<div class="tab" id="tab-caja" hidden>
+<h2>Ingresos y retiradas</h2>
+<section class="card">
+  <div class="grid" style="margin-top:0"><div class="stat"><div class="lbl">Total ingresado</div><div class="val" id="cIng">0,00 €</div></div><div class="stat"><div class="lbl">Total retirado</div><div class="val" id="cRet">0,00 €</div></div></div>
+  <div class="stat" style="margin-top:8px"><div class="lbl">Saldo estimado en la casa</div><div class="val" id="cSaldo">0,00 €</div></div>
+  <p class="hint">Saldo estimado = ingresos − retiradas + neto de las apuestas − lo que tienes en juego. Compáralo con tu saldo real: si no coincide, falta algún ingreso, retirada o apuesta.</p>
+</section>
+<h2>Añadir movimiento</h2>
+<section class="card">
+  <div class="row">
+    <div><label for="cTipo">Tipo (ingreso = meto dinero)</label><select id="cTipo"><option value="ingreso">Ingreso</option><option value="retirada">Retirada</option></select></div>
+    <div><label for="cImporte">Importe €</label><input id="cImporte" inputmode="decimal" placeholder="50,00"></div>
+    <div><label for="cFecha">Fecha</label><input type="date" id="cFecha"></div>
+  </div>
+  <label for="cNota" style="margin-top:8px">Nota (opcional)</label>
+  <input id="cNota" placeholder="Bizum, tarjeta, transferencia…">
+  <button style="margin-top:10px;width:100%" id="cAdd">Guardar movimiento</button>
+  <div class="status" id="cMsg"></div>
+</section>
+<h2>Por mes</h2>
+<section class="card"><div id="cMes"></div></section>
+<h2>Movimientos</h2>
+<section class="card"><div id="cLista"></div></section>
+<section class="card" style="margin-top:10px">
+  <div class="row"><button class="sec" id="cBtnCsv">Exportar CSV</button><button class="sec" id="cBtnImp">Importar CSV</button></div>
+  <input type="file" id="cCsvFile" accept=".csv,.txt,text/csv,text/plain" style="display:none">
+  <div class="status" id="cImpMsg" style="white-space:pre-line"></div>
+  <p class="hint">Columnas del CSV: <b>fecha; tipo; importe; nota</b>. El tipo es ingreso o retirada. Las filas idénticas a una que ya tienes se omiten.</p>
+</section>
 </div>
 
 <div class="tab" id="tab-ajustes" hidden>
@@ -219,12 +264,15 @@ header,main{position:relative;z-index:1}
 </section>
 </div>
 </main>
-<nav class="tabbar" role="tablist" aria-label="Secciones"><div class="in"><button type="button" role="tab" data-tab="resumen" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Resumen</span></button><button type="button" role="tab" data-tab="anadir" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span>Añadir</span><i class="badge" id="badgeAnadir" hidden>0</i></button><button type="button" role="tab" data-tab="periodos" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Periodos</span></button><button type="button" role="tab" data-tab="apuestas" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span>Apuestas</span></button><button type="button" role="tab" data-tab="ajustes" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>Ajustes</span></button></div></nav>
+<nav class="tabbar" role="tablist" aria-label="Secciones"><div class="in"><button type="button" role="tab" data-tab="resumen" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Resumen</span></button><button type="button" role="tab" data-tab="anadir" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span>Añadir</span><i class="badge" id="badgeAnadir" hidden>0</i></button><button type="button" role="tab" data-tab="periodos" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Periodos</span></button><button type="button" role="tab" data-tab="apuestas" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span>Apuestas</span><i class="badge" id="badgeCurso" style="background:var(--void);color:#111" hidden>0</i></button><button type="button" role="tab" data-tab="caja" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M16 15h2"/></svg><span>Caja</span></button><button type="button" role="tab" data-tab="ajustes" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>Ajustes</span></button></div></nav>
 <script>
 (function(){
   var KEY = 'mis_apuestas_v1';
   var bets = [];
   try { bets = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch(e){ bets = []; }
+  var MKEY = 'mis_apuestas_movs_v1', movs = [];
+  try { movs = JSON.parse(localStorage.getItem(MKEY) || '[]'); } catch(e){ movs = []; }
+  function saveMovs(){ try { localStorage.setItem(MKEY, JSON.stringify(movs)); } catch(e){} }
   var pend = []; // apuestas leídas pendientes de confirmar
   var idSeq = 0;
   var $ = function(id){ return document.getElementById(id); };
@@ -246,7 +294,12 @@ header,main{position:relative;z-index:1}
     return (n<0?'−':'') + s + ' €';
   }
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
-  function netoDe(b){ return b.estado==='anulada' ? 0 : Math.round((b.ganancias - b.importe)*100)/100; }
+  var ETIQ = {ganada:'Ganada', perdida:'Perdida', anulada:'Anulada', encurso:'En curso', cashout:'Cashout'};
+  function resuelta(b){ return b.estado==='ganada' || b.estado==='perdida' || b.estado==='cashout'; }
+  function acierto(b){ return b.estado==='ganada' || (b.estado==='cashout' && b.ganancias>b.importe); }
+  var LV = 'cerradas', editId = null, editPre = null;
+  if (bets.some(function(b){ return b.estado==='encurso'; })) LV = 'encurso';
+  function netoDe(b){ return (b.estado==='anulada' || b.estado==='encurso') ? 0 : Math.round((b.ganancias - b.importe)*100)/100; }
   function fmtDia(d){ if(!d) return '—'; var p=d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
   function diaDe(b){ return b.fechaApuesta || b.dia; }
   function normRef(r){ return String(r||'').replace(/\D/g,''); }
@@ -272,7 +325,7 @@ header,main{position:relative;z-index:1}
     f.forEach(function(b){
       var k = claveFn(diaDe(b)), o = g[k] || (g[k]={n:0,gan:0,tot:0,neto:0});
       o.n++; o.neto += netoDe(b);
-      if (b.estado!=='anulada'){ o.tot++; if (b.estado==='ganada') o.gan++; }
+      if (resuelta(b)){ o.tot++; if (acierto(b)) o.gan++; }
     });
     var keys = Object.keys(g).sort().reverse();
     if (!keys.length){ $(target).innerHTML = '<div class="empty">Aún no hay apuestas en este periodo.</div>'; return; }
@@ -296,7 +349,7 @@ header,main{position:relative;z-index:1}
       var A = porAnio[y] || (porAnio[y] = {});
       var o = A[m] || (A[m] = {n:0,gan:0,tot:0,neto:0});
       o.n++; o.neto += netoDe(b);
-      if (b.estado!=='anulada'){ o.tot++; if (b.estado==='ganada') o.gan++; }
+      if (resuelta(b)){ o.tot++; if (acierto(b)) o.gan++; }
     });
     var years = Object.keys(porAnio).sort().reverse();
     if (!years.length){ $('historico').innerHTML = '<div class="empty">Aquí irá quedando el resultado de cada mes.</div>'; return; }
@@ -324,13 +377,21 @@ header,main{position:relative;z-index:1}
 
   function render(){
     var f = filtradas();
+    var cur = bets.filter(function(b){ return b.estado==='encurso'; });
+    var sumCur = cur.reduce(function(a,b){ return a+b.importe; },0);
+    $('enJuego').textContent = cur.length ? cur.length+(cur.length===1?' apuesta':' apuestas')+' · '+eur(sumCur) : 'Ninguna';
+    var bc = $('badgeCurso'); bc.textContent = cur.length; bc.hidden = !cur.length;
     var neto=0, bruto=0, apost=0, perd=0, benG=0, gan=0, valid=0;
+    var nCash=0, netoCash=0;
     f.forEach(function(b){
-      if (b.estado==='anulada') return;
-      valid++; apost += b.importe; neto += netoDe(b);
-      if (b.estado==='ganada'){ gan++; bruto += b.ganancias; benG += b.ganancias-b.importe; }
-      else { perd += b.importe; }
+      if (!resuelta(b)) return;
+      var n = netoDe(b);
+      valid++; apost += b.importe; neto += n; bruto += b.ganancias;
+      if (acierto(b)) gan++;
+      if (n>0) benG += n; else if (n<0) perd += -n;
+      if (b.estado==='cashout'){ nCash++; netoCash += n; }
     });
+    $('cashStat').textContent = nCash ? nCash+' · '+eur(netoCash) : 'Ninguna';
     var n = $('neto'); n.textContent = eur(neto);
     n.className = 'big ' + (neto>0?'pos':neto<0?'neg':'');
     $('bruto').textContent = eur(bruto);
@@ -347,7 +408,7 @@ header,main{position:relative;z-index:1}
     f.forEach(function(b){
       var dk = diaDe(b); var o = dias[dk] || (dias[dk]={n:0,neto:0,ap:0,gan:0,tot:0});
       o.n++; o.neto += netoDe(b);
-      if (b.estado!=='anulada'){ o.ap += b.importe; o.tot++; if(b.estado==='ganada') o.gan++; }
+      if (resuelta(b)){ o.ap += b.importe; o.tot++; if (acierto(b)) o.gan++; }
     });
     var keys = Object.keys(dias).sort().reverse();
     var maxAbs = Math.max.apply(null, keys.map(function(k){return Math.abs(dias[k].neto);}).concat([1]));
@@ -362,14 +423,37 @@ header,main{position:relative;z-index:1}
     agrupa(f, claveMes, etiquetaMes, 'porMes', 'Mes', 'meses');
 
     // lista
-    var sorted = f.slice().sort(function(a,b){ return diaDe(a)<diaDe(b)?1:diaDe(a)>diaDe(b)?-1:b.id-a.id; });
-    $('lista').innerHTML = sorted.length ? sorted.map(function(b){
-      var nt = netoDe(b);
-      return '<div class="bet"><span class="tag '+b.estado+'">'+b.estado.charAt(0).toUpperCase()+b.estado.slice(1)+'</span>'+
-        '<div class="mid">'+eur(b.importe)+' → '+eur(b.ganancias)+'<small>Apuesta: '+fmtDia(b.fechaApuesta||b.dia)+(b.hora?' '+esc(b.hora):'')+'</small><small>Ref: '+(b.ref?esc(b.ref):'—')+'</small></div>'+
-        '<strong class="'+(nt>0?'pos':nt<0?'neg':'')+'">'+eur(nt)+'</strong>'+
-        '<button class="del" data-del="'+b.id+'" aria-label="Borrar apuesta">Borrar</button></div>';
-    }).join('') : '<div class="empty">Sube una captura o añade una apuesta a mano.</div>';
+    var base = LV==='encurso' ? cur : f.filter(function(b){ return LV==='ganada' ? b.estado==='ganada' : LV==='perdida' ? b.estado==='perdida' : LV==='cashout' ? b.estado==='cashout' : b.estado!=='encurso'; });
+    var sorted = base.slice().sort(function(a,b){ return diaDe(a)<diaDe(b)?1:diaDe(a)>diaDe(b)?-1:b.id-a.id; });
+    $('lista').innerHTML = sorted.length ? sorted.map(filaHtml).join('') : '<div class="empty">'+(LV==='encurso' ? 'No tienes apuestas en curso.' : (bets.length ? 'No hay apuestas de este tipo en el periodo elegido.' : 'Sube una captura o añade una apuesta a mano.'))+'</div>';
+    var d0 = $('desde').value, h0 = $('hasta').value;
+    var tm = totalesMov(movs.filter(function(m){ return (!d0 || m.fecha>=d0) && (!h0 || m.fecha<=h0); }));
+    $('hIng').textContent = eur(tm.ing); $('hRet').textContent = eur(tm.ret);
+    var sh = saldoEstimado(); $('hSaldo').textContent = eur(sh); $('hSaldo').className = 'val '+(sh<0?'neg':'');
+    renderCaja();
+    if (editId && editFoco){ var ig = document.querySelector('.editor [data-ef="ganancias"]'); if (ig){ ig.focus(); ig.select(); } editFoco = false; }
+  }
+  var editFoco = false;
+  function filaHtml(b){
+    if (editId===b.id) return editorHtml(b);
+    var nt = netoDe(b), pend_ = b.estado==='encurso';
+    var fila = '<div class="bet'+(pend_?' sinborde':'')+'"><span class="tag '+b.estado+'">'+ETIQ[b.estado]+'</span>'+
+      '<div class="mid">'+eur(b.importe)+(pend_?' · pendiente':' → '+eur(b.ganancias))+'<small>Apuesta: '+fmtDia(b.fechaApuesta||b.dia)+(b.hora?' '+esc(b.hora):'')+'</small><small>Ref: '+(b.ref?esc(b.ref):'—')+'</small></div>'+
+      '<strong class="'+(nt>0?'pos':nt<0?'neg':'')+'">'+(pend_?'—':eur(nt))+'</strong>'+
+      '<button class="del" data-act="edit" data-id="'+b.id+'" aria-label="Editar apuesta">Editar</button></div>';
+    if (pend_) fila += '<div class="acc" data-id="'+b.id+'"><button class="g" data-act="res-ganada">Ganada</button><button class="p" data-act="res-perdida">Perdida</button><button class="sec" data-act="res-cashout">Cashout</button><button class="sec" data-act="res-anulada">Anulada</button></div>';
+    return fila;
+  }
+  function editorHtml(b){
+    var v = (editPre && editId===b.id) ? Object.assign({}, b, editPre) : b;
+    return '<div class="editor" data-id="'+b.id+'"><div class="row">'+
+      '<div><label>Estado</label><select data-ef="estado">'+['encurso','ganada','cashout','perdida','anulada'].map(function(x){ return '<option value="'+x+'"'+(v.estado===x?' selected':'')+'>'+ETIQ[x]+'</option>'; }).join('')+'</select></div>'+
+      '<div><label>Importe €</label><input data-ef="importe" inputmode="decimal" value="'+String(v.importe).replace('.',',')+'"></div>'+
+      '<div><label>Ganancias €</label><input data-ef="ganancias" inputmode="decimal" placeholder="Lo que cobraste" value="'+(v.ganancias===''||v.ganancias===undefined?'':String(v.ganancias).replace('.',','))+'"></div></div>'+
+      '<div class="row" style="margin-top:8px"><div><label>Día de la apuesta</label><input type="date" data-ef="fecha" value="'+(v.fechaApuesta||v.dia||'')+'"></div>'+
+      '<div><label>Referencia</label><input data-ef="ref" inputmode="numeric" value="'+esc(v.ref||'')+'"></div></div>'+
+      '<div class="status" data-ef-msg></div>'+
+      '<div class="row" style="margin-top:8px"><button data-act="guardar">Guardar</button><button class="sec" data-act="cancelar">Cancelar</button><button class="del" data-act="borrar">Borrar</button></div></div>';
   }
 
   // ---------- Filtros ----------
@@ -378,6 +462,11 @@ header,main{position:relative;z-index:1}
   $('btnTodo').onclick = function(){ $('desde').value = $('hasta').value = ''; render(); };
 
   // ---------- Guardar / borrar ----------
+  function aplicaResultado(g, b){
+    g.estado = b.estado;
+    g.ganancias = b.estado==='anulada' ? g.importe : (b.estado==='perdida' ? 0 : b.ganancias);
+    save();
+  }
   function addBet(b){
     b.ref = normRef(b.ref);
     if (b.ref && buscaRef(b.ref)) return false;
@@ -388,19 +477,49 @@ header,main{position:relative;z-index:1}
     bets.push(b); save(); return true;
   }
   $('lista').onclick = function(e){
-    var id = e.target.getAttribute('data-del');
-    if (!id) return;
-    bets = bets.filter(function(b){ return String(b.id)!==id; }); save(); render();
+    var el = e.target.closest('[data-act]'); if (!el) return;
+    var act = el.getAttribute('data-act'), box = el.closest('[data-id]'), id = box ? box.getAttribute('data-id') : '';
+    var b = bets.filter(function(x){ return String(x.id)===String(id); })[0]; if (!b) return;
+    if (act==='edit'){ editId = b.id; editPre = null; render(); return; }
+    if (act==='cancelar'){ editId = null; editPre = null; render(); return; }
+    if (act==='borrar'){
+      if (confirm('¿Borrar esta apuesta?')){ bets = bets.filter(function(x){ return x.id!==b.id; }); save(); editId = null; editPre = null; render(); }
+      return;
+    }
+    if (act==='res-perdida'){ b.estado='perdida'; b.ganancias=0; save(); render(); return; }
+    if (act==='res-anulada'){ b.estado='anulada'; b.ganancias=b.importe; save(); render(); return; }
+    if (act==='res-ganada' || act==='res-cashout'){ editId = b.id; editPre = {estado:(act==='res-ganada'?'ganada':'cashout'), ganancias:''}; editFoco = true; render(); return; }
+    if (act==='guardar'){
+      var get = function(k){ return box.querySelector('[data-ef="'+k+'"]').value; };
+      var msg = box.querySelector('[data-ef-msg]');
+      var est = get('estado'), imp = num(get('importe')), g = num(get('ganancias')), fecha = get('fecha'), ref = normRef(get('ref'));
+      if (!(imp>0)){ msg.textContent = 'Pon un importe válido.'; return; }
+      if ((est==='ganada' || est==='cashout') && !(g>0)){ msg.textContent = 'Escribe lo que cobraste (ganancias).'; return; }
+      var otra = ref ? buscaRef(ref) : null;
+      if (otra && otra.id!==b.id){ msg.textContent = 'Esa referencia ya pertenece a otra apuesta.'; return; }
+      b.estado = est; b.importe = imp; b.ref = ref;
+      b.ganancias = est==='anulada' ? imp : ((est==='perdida' || est==='encurso') ? 0 : g);
+      if (fecha){ b.fechaApuesta = fecha; b.dia = fecha; }
+      save(); editId = null; editPre = null; render(); return;
+    }
+  };
+  Array.prototype.forEach.call($('segLista').querySelectorAll('button'), function(x){ x.classList.toggle('on', x.getAttribute('data-lf')===LV); });
+  $('segLista').onclick = function(e){
+    var bt = e.target.closest('[data-lf]'); if (!bt) return;
+    LV = bt.getAttribute('data-lf');
+    Array.prototype.forEach.call(this.querySelectorAll('button'), function(x){ x.classList.toggle('on', x===bt); });
+    editId = null; render();
   };
   $('mAdd').onclick = function(){
     var est = $('mEstado').value, imp = num($('mImporte').value), g = num($('mGan').value), ref = normRef($('mRef').value);
     if (!imp) { $('mImporte').focus(); return; }
+    if ((est==='ganada' || est==='cashout') && !(g>0)){ $('mMsg').innerHTML = '<span class="neg">Escribe lo que cobraste (ganancias).</span>'; $('mGan').focus(); return; }
     var dup = buscaRef(ref);
     if (dup){
       $('mMsg').innerHTML = '<span class="neg">Esa referencia ya está guardada (apuesta del '+fmtDia(dup.fechaApuesta||dup.dia)+', '+eur(dup.importe)+'). No se puede añadir otra vez.</span>';
       return;
     }
-    if (est==='perdida') g = 0;
+    if (est==='perdida' || est==='encurso') g = 0;
     if (est==='anulada') g = imp;
     var dia = $('dia').value||today();
     addBet({fechaApuesta:dia, estado:est, importe:imp, ganancias:g, ref:ref});
@@ -434,17 +553,17 @@ header,main{position:relative;z-index:1}
   }
   function parse(text){
     var out = [];
-    var parts = text.split(/(Ganada|Perdida|Anulada|Cashout)\b/i);
+    var parts = text.split(/(Ganada|Perdida|Anulada|Cashout|Cerrada|En curso|Abierta|Pendiente)\b/i);
     for (var i=1;i<parts.length;i+=2){
       var st = parts[i].toLowerCase(), body = parts[i+1] || '';
-      var estado = st.indexOf('gan')===0 ? 'ganada' : st.indexOf('perd')===0 ? 'perdida' : st.indexOf('anul')===0 ? 'anulada' : 'ganada';
+      var estado = st.indexOf('gan')===0 ? 'ganada' : st.indexOf('perd')===0 ? 'perdida' : st.indexOf('anul')===0 ? 'anulada' : /^(en|abie|pend)/.test(st) ? 'encurso' : /^(cerr|cash)/.test(st) ? 'cashout' : 'ganada';
       var imp = body.match(/(?:Importe|Anulad[oa])\D{0,12}?(\d{1,6}[.,]\d{2})/i);
       var gan = body.match(/Ganancias\D{0,12}?(\d{1,6}[.,]\d{2})/i);
       var ref = body.match(/\/\s*(\d{9,12})/);
       if (!imp && !gan) continue;
       var importe = imp ? num(imp[1]) : 0;
       var g = gan ? num(gan[1]) : 0;
-      if (estado==='perdida') g = 0;
+      if (estado==='perdida' || estado==='encurso') g = 0;
       if (estado==='anulada') g = importe;
       out.push({estado:estado, importe:importe, ganancias:g, ref:ref?ref[1]:''});
     }
@@ -469,8 +588,8 @@ header,main{position:relative;z-index:1}
 
   var PROMPT = "Eres un lector de tickets de apuestas deportivas de una casa de apuestas en español. " +
     "Te paso una captura con una o varias tarjetas de apuestas. Devuelve SOLO un array JSON, sin texto extra, con un objeto por apuesta: " +
-    "{\"estado\":\"ganada|perdida|anulada\",\"importe\":numero,\"ganancias\":numero,\"texto_pie\":\"...\"}. " +
-    "Reglas: importe es el valor de la fila Importe (en anuladas, la cantidad devuelta). ganancias es la fila Ganancias (0 si perdida; en anuladas igual al importe). Usa punto decimal. Ignora las lineas de Cashback y los reembolsos por cashback. " +
+    "{\"estado\":\"ganada|perdida|anulada|encurso|cashout\",\"importe\":numero,\"ganancias\":numero,\"texto_pie\":\"...\"}. " +
+    "Reglas: importe es el valor de la fila Importe (en anuladas, la cantidad devuelta). ganancias es la fila Ganancias (0 si perdida o encurso; en anuladas igual al importe). Si la apuesta aun no tiene resultado (etiqueta En curso, Abierta, Pendiente o En juego, sin resultado final) el estado es encurso. Si el usuario cerro la apuesta antes de terminar (etiqueta Cerrada, Cash out o Cashout; NO es lo mismo que Cashback), el estado es cashout y ganancias es lo que cobro. Usa punto decimal. Ignora las lineas de Cashback y los reembolsos por cashback. " +
     "texto_pie es el pie de la tarjeta (la barra inferior) copiado LITERALMENTE tal como se lee, por ejemplo: Ref: 6L8R0SIE / 2991421945 20:49 - 11 noviembre 2026. A la izquierda va la referencia y a la derecha la hora y la fecha. Copia el pie de ESA tarjeta, nunca el de otra. " +
     "La fecha corta que aparece encima del marcador del partido (por ejemplo 12/11) NO es la del pie: ignorala. " +
     "Si el pie de una tarjeta no se ve completo en la imagen (cortado por el borde), pon texto_pie null. No inventes ni completes datos.";
@@ -571,9 +690,10 @@ header,main{position:relative;z-index:1}
       arr.forEach(function(o){
         if (!o) return;
         var est = String(o.estado||'').toLowerCase();
-        if (est.indexOf('gan')===0) est='ganada'; else if (est.indexOf('perd')===0) est='perdida'; else if (est.indexOf('anul')===0) est='anulada'; else return;
+        est = est.replace(/[^a-z]/g,'');
+        if (est.indexOf('gan')===0) est='ganada'; else if (est.indexOf('perd')===0) est='perdida'; else if (est.indexOf('anul')===0) est='anulada'; else if (/^(encurso|abiert|pendient|enjuego)/.test(est)) est='encurso'; else if (/^(cashout|cerrad|retirad)/.test(est)) est='cashout'; else return;
         var imp = num(o.importe), g = num(o.ganancias);
-        if (est==='perdida') g = 0;
+        if (est==='perdida' || est==='encurso') g = 0;
         if (est==='anulada') g = imp;
         var pie = o.texto_pie ? String(o.texto_pie) : '';
         var lp = leerPie(pie);
@@ -641,18 +761,27 @@ header,main{position:relative;z-index:1}
       }
     }
     var uniq = avisos.filter(function(a,i,x){ return x.indexOf(a)===i; });
-    var nuevas = [], omitidas = 0;
+    var nuevas = [], omitidas = 0, actualizadas = [];
     pend.forEach(function(b){
-      var r = normRef(b.ref);
-      if (r && (buscaRef(r) || nuevas.some(function(x){ return normRef(x.ref)===r; }))) omitidas++;
+      var r = normRef(b.ref), g = r ? buscaRef(r) : null;
+      if (g && g.estado==='encurso' && !b.vacio && b.estado!=='encurso'){
+        aplicaResultado(g, b);
+        actualizadas.push(ETIQ[b.estado]+(b.estado==='ganada' ? ' ('+eur(netoDe(g))+')' : '')+' · ref …'+r.slice(-4));
+        return;
+      }
+      if (r && (g || nuevas.some(function(x){ return normRef(x.ref)===r; }))) omitidas++;
       else nuevas.push(b);
     });
     pend = nuevas;
     var leidas = pend.filter(function(b){ return !b.vacio; }).length;
-    var msg = leidas ? 'Listo: '+leidas+(leidas===1?' apuesta nueva por revisar.':' apuestas nuevas por revisar.') : (omitidas ? 'No hay nada nuevo.' : 'No he podido leer apuestas.');
-    if (omitidas) msg += ' '+omitidas+(omitidas===1?' ya estaba guardada y la he omitido.':' ya estaban guardadas y las he omitido.');
-    if (uniq.length) msg += ' Avisos: '+uniq.join('; ')+'.';
-    $('ocrStatus').textContent = msg;
+    var partes = [];
+    if (leidas) partes.push('Listo: '+leidas+(leidas===1?' apuesta nueva por revisar.':' apuestas nuevas por revisar.'));
+    if (actualizadas.length) partes.push((actualizadas.length===1?'1 apuesta en curso actualizada':actualizadas.length+' apuestas en curso actualizadas')+': '+actualizadas.join('; ')+'.');
+    if (omitidas) partes.push(omitidas+(omitidas===1?' ya estaba guardada y la he omitido.':' ya estaban guardadas y las he omitido.'));
+    if (!leidas && !actualizadas.length) partes.unshift(omitidas ? 'No hay nada nuevo.' : 'No he podido leer apuestas.');
+    if (uniq.length) partes.push('Avisos: '+uniq.join('; ')+'.');
+    $('ocrStatus').textContent = partes.join(' ');
+    if (actualizadas.length) render();
     e.target.value = '';
     renderPend();
   };
@@ -678,7 +807,7 @@ header,main{position:relative;z-index:1}
         '<div class="head"><span>'+(b.vacio?'No he podido leer esta captura':dup?'Apuesta repetida':'Revisa y confirma')+(b.origen?' · '+b.origen+(b.fuenteDia?' ('+b.fuenteDia+')':''):'')+'</span></div>'+aviso+avisoFecha+
         '<div class="row">'+
           '<div><label>Estado</label><select data-f="estado">'+
-            ['ganada','perdida','anulada'].map(function(x){return '<option value="'+x+'"'+(b.estado===x?' selected':'')+'>'+x.charAt(0).toUpperCase()+x.slice(1)+'</option>';}).join('')+
+            ['ganada','perdida','anulada','encurso'].map(function(x){return '<option value="'+x+'"'+(b.estado===x?' selected':'')+'>'+ETIQ[x]+'</option>';}).join('')+
           '</select></div>'+
           '<div><label>Importe €</label><input data-f="importe" inputmode="decimal" value="'+String(b.importe).replace('.',',')+'"></div>'+
           '<div><label>Ganancias €</label><input data-f="ganancias" inputmode="decimal" value="'+String(b.ganancias).replace('.',',')+'"></div>'+
@@ -699,16 +828,16 @@ header,main{position:relative;z-index:1}
     if (f==='importe' || f==='ganancias') b[f] = num(e.target.value);
     else if (f==='ref') b[f] = normRef(e.target.value);
     else b[f] = e.target.value;
-    if (f==='ref' || (f==='estado' && b.estado==='perdida')){ if (b.estado==='perdida') b.ganancias = 0; renderPend(); }
+    if (f==='ref' || (f==='estado' && (b.estado==='perdida' || b.estado==='encurso'))){ if (b.estado==='perdida' || b.estado==='encurso') b.ganancias = 0; renderPend(); }
   };
   $('pendientes').onclick = function(e){
     var act = e.target.getAttribute('data-act'); if(!act) return;
     if (act==='all'){
       var resto = [];
       pend.forEach(function(b,i){
-        if (b.vacio || dupInfo(b,i)){ resto.push(b); return; }
+        if (b.vacio || dupInfo(b,i) || ((b.estado==='ganada' || b.estado==='cashout') && !(b.ganancias>0))){ resto.push(b); return; }
         if (b.estado==='anulada') b.ganancias = b.importe;
-        if (b.estado==='perdida') b.ganancias = 0;
+        if (b.estado==='perdida' || b.estado==='encurso') b.ganancias = 0;
         if (!addBet({fechaApuesta:b.fechaApuesta, hora:b.hora, estado:b.estado, importe:b.importe, ganancias:b.ganancias, ref:b.ref})) resto.push(b);
       });
       pend = resto; renderPend(); render(); return;
@@ -716,8 +845,9 @@ header,main{position:relative;z-index:1}
     var card = e.target.closest('.pending'), i = +card.getAttribute('data-i'), b = pend[i];
     if (act==='ok'){
       if (dupInfo(b,i)){ renderPend(); return; }
+      if ((b.estado==='ganada' || b.estado==='cashout') && !(b.ganancias>0)){ var gi = card.querySelector('[data-f="ganancias"]'); if (gi) gi.focus(); return; }
       if (b.estado==='anulada') b.ganancias = b.importe;
-      if (b.estado==='perdida') b.ganancias = 0;
+      if (b.estado==='perdida' || b.estado==='encurso') b.ganancias = 0;
       addBet({fechaApuesta:b.fechaApuesta, hora:b.hora, estado:b.estado, importe:b.importe, ganancias:b.ganancias, ref:b.ref});
     }
     pend.splice(i,1); renderPend(); render();
@@ -767,24 +897,25 @@ header,main{position:relative;z-index:1}
     });
     if (idx.estado===undefined || idx.importe===undefined || idx.fecha===undefined)
       return {error:'No encuentro las columnas obligatorias (fecha_apuesta, estado, importe) en la primera fila.'};
-    var nuevas=0, dup=0, errores=[];
+    var nuevas=0, dup=0, act=0, errores=[];
     for (var n=1;n<lineas.length;n++){
       var c = partirLinea(lineas[n], sep), g = function(k){ return idx[k]===undefined ? '' : (c[idx[k]]||''); };
       var est = quitaAcentos(g('estado')), estado = '';
-      if (/^(gan|won|win)/.test(est)) estado='ganada'; else if (/^(perd|lost|loss)/.test(est)) estado='perdida'; else if (/^(anul|void|devuel)/.test(est)) estado='anulada';
+      if (/^(gan|won|win)/.test(est)) estado='ganada'; else if (/^(perd|lost|loss)/.test(est)) estado='perdida'; else if (/^(anul|void|devuel)/.test(est)) estado='anulada'; else if (/^(en ?curso|abiert|pend|open)/.test(est)) estado='encurso'; else if (/^(cashout|cash out|cerrad)/.test(est)) estado='cashout';
       var imp = num(g('importe')), fecha = leerPie(g('fecha')).fecha;
       if (!estado){ errores.push('Fila '+(n+1)+': estado no reconocido ("'+g('estado')+'")'); continue; }
       if (!(imp>0)){ errores.push('Fila '+(n+1)+': importe no válido'); continue; }
       if (!fecha){ errores.push('Fila '+(n+1)+': fecha no válida ("'+g('fecha')+'")'); continue; }
       var gan = g('ganancias')!=='' ? num(g('ganancias')) : (g('neto')!=='' ? imp+num(g('neto')) : 0);
-      if (estado==='perdida') gan = 0;
+      if (estado==='perdida' || estado==='encurso') gan = 0;
       if (estado==='anulada') gan = imp;
-      if (estado==='ganada' && !(gan>0)){ errores.push('Fila '+(n+1)+': apuesta ganada sin ganancias'); continue; }
+      if ((estado==='ganada' || estado==='cashout') && !(gan>0)){ errores.push('Fila '+(n+1)+': apuesta ganada sin ganancias'); continue; }
       var hm = g('hora').match(/^(\d{1,2}):(\d{2})/);
       var ok = addBet({fechaApuesta:fecha, hora:hm?pad2(hm[1])+':'+hm[2]:'', estado:estado, importe:imp, ganancias:gan, ref:g('ref')});
-      if (ok) nuevas++; else dup++;
+      if (ok) nuevas++;
+      else { var ex = buscaRef(g('ref')); if (ex && ex.estado==='encurso' && estado!=='encurso'){ aplicaResultado(ex, {estado:estado, ganancias:gan}); act++; } else dup++; }
     }
-    return {nuevas:nuevas, dup:dup, errores:errores};
+    return {nuevas:nuevas, dup:dup, act:act, errores:errores};
   }
   $('btnImportCsv').onclick = function(){ $('csvFile').click(); };
   $('csvFile').onchange = function(e){
@@ -795,6 +926,7 @@ header,main{position:relative;z-index:1}
       if (res.error){ $('impMsg').textContent = res.error; }
       else {
         var m = 'Importadas '+res.nuevas+(res.nuevas===1?' apuesta nueva.':' apuestas nuevas.');
+        if (res.act) m += '\n'+res.act+(res.act===1?' apuesta en curso actualizada con su resultado.':' apuestas en curso actualizadas con su resultado.');
         if (res.dup) m += '\n'+res.dup+(res.dup===1?' ya existía (misma referencia) y se omitió.':' ya existían (misma referencia) y se omitieron.');
         if (res.errores.length) m += '\n'+res.errores.length+' filas con problemas, no importadas:\n'+res.errores.slice(0,6).join('\n')+(res.errores.length>6?'\n…':'');
         $('impMsg').textContent = m;
@@ -804,27 +936,117 @@ header,main{position:relative;z-index:1}
     r.readAsText(f, 'utf-8'); e.target.value = '';
   };
 
-  $('btnBackup').onclick = function(){ download('copia-apuestas.json', JSON.stringify(bets), 'application/json'); };
+  $('btnBackup').onclick = function(){ download('copia-apuestas.json', JSON.stringify({version:2, bets:bets, movs:movs}), 'application/json'); };
   $('btnRestore').onclick = function(){ $('restoreFile').click(); };
   $('restoreFile').onchange = function(e){
     var f = e.target.files[0]; if(!f) return;
     var r = new FileReader();
     r.onload = function(){
       try{
-        var data = JSON.parse(r.result), n=0;
+        var data = JSON.parse(r.result), n=0, nm=0, lista = Array.isArray(data) ? data : (data.bets||[]);
         var dups = 0;
-        data.forEach(function(b){ if (b && (b.fechaApuesta||b.dia) && b.estado){ if (addBet({fechaApuesta:b.fechaApuesta||b.dia, hora:b.hora||'', estado:b.estado, importe:+b.importe||0, ganancias:+b.ganancias||0, ref:b.ref||''})) n++; else dups++; } });
-        render(); $('ocrStatus').textContent = 'Restauradas '+n+' apuestas'+(dups?' ('+dups+' ya existían y se omitieron)':'')+'.';
-      }catch(err){ $('ocrStatus').textContent = 'El archivo no es una copia válida.'; }
+        lista.forEach(function(b){ if (b && (b.fechaApuesta||b.dia) && b.estado){ if (addBet({fechaApuesta:b.fechaApuesta||b.dia, hora:b.hora||'', estado:b.estado, importe:+b.importe||0, ganancias:+b.ganancias||0, ref:b.ref||''})) n++; else dups++; } });
+        (Array.isArray(data) ? [] : (data.movs||[])).forEach(function(m){
+          var imp = +m.importe;
+          if (m && m.fecha && (m.tipo==='ingreso' || m.tipo==='retirada') && imp>0 && !movs.some(function(x){ return x.fecha===m.fecha && x.tipo===m.tipo && x.importe===imp && (x.nota||'')===(m.nota||''); })){
+            movs.push({id:Date.now()*1000+(idSeq++ % 1000), fecha:m.fecha, tipo:m.tipo, importe:imp, nota:m.nota||''}); nm++;
+          }
+        });
+        saveMovs();
+        render(); $('impMsg').textContent = 'Restauradas '+n+' apuestas'+(nm?' y '+nm+' movimientos':'')+(dups?' ('+dups+' ya existían y se omitieron)':'')+'.';
+      }catch(err){ $('impMsg').textContent = 'El archivo no es una copia válida.'; }
     };
     r.readAsText(f); e.target.value='';
   };
   $('btnBorrar').onclick = function(){
-    if (confirm('¿Borrar todas las apuestas guardadas? No se puede deshacer.')){ bets=[]; save(); render(); }
+    if (confirm('¿Borrar TODAS las apuestas y los movimientos guardados? No se puede deshacer.')){ bets=[]; save(); movs=[]; saveMovs(); render(); }
+  };
+
+  // ---------- Caja: ingresos y retiradas ----------
+  function totalesMov(lista){
+    var i = 0, r = 0;
+    lista.forEach(function(m){ if (m.tipo==='ingreso') i += m.importe; else r += m.importe; });
+    return {ing: Math.round(i*100)/100, ret: Math.round(r*100)/100};
+  }
+  function saldoEstimado(){
+    var t = totalesMov(movs), neto = 0, juego = 0;
+    bets.forEach(function(b){ neto += netoDe(b); if (b.estado==='encurso') juego += b.importe; });
+    return Math.round((t.ing - t.ret + neto - juego)*100)/100;
+  }
+  function renderCaja(){
+    var t = totalesMov(movs), sa = saldoEstimado();
+    $('cIng').textContent = eur(t.ing); $('cRet').textContent = eur(t.ret);
+    $('cSaldo').textContent = eur(sa); $('cSaldo').className = 'val '+(sa<0?'neg':'');
+    var M = {};
+    movs.forEach(function(m){ var k=m.fecha.slice(0,7), o = M[k] || (M[k]={ing:0,ret:0,neto:0}); if (m.tipo==='ingreso') o.ing += m.importe; else o.ret += m.importe; });
+    bets.forEach(function(b){ var d = diaDe(b); if (!d) return; var k=d.slice(0,7), o = M[k] || (M[k]={ing:0,ret:0,neto:0}); o.neto += netoDe(b); });
+    var ks = Object.keys(M).sort().reverse();
+    $('cMes').innerHTML = ks.length ? '<table><tr><th>Mes</th><th>Ingresos</th><th>Retiradas</th><th>Neto apuestas</th></tr>'+
+      ks.map(function(k){ var o=M[k]; return '<tr><td>'+etiquetaMes(k)+'</td><td>'+eur(o.ing)+'</td><td>'+eur(o.ret)+'</td><td class="'+(o.neto>0?'pos':o.neto<0?'neg':'')+'">'+eur(o.neto)+'</td></tr>'; }).join('')+'</table>' : '<div class="empty">Aquí irá el resumen de cada mes.</div>';
+    var ord = movs.slice().sort(function(a,b){ return a.fecha<b.fecha?1:a.fecha>b.fecha?-1:b.id-a.id; });
+    $('cLista').innerHTML = ord.length ? ord.map(function(m){
+      return '<div class="bet"><span class="tag '+m.tipo+'">'+(m.tipo==='ingreso'?'Ingreso':'Retirada')+'</span><div class="mid">'+eur(m.importe)+'<small>'+fmtDia(m.fecha)+(m.nota?' · '+esc(m.nota):'')+'</small></div><button class="del" data-mdel="'+m.id+'" aria-label="Borrar movimiento">Borrar</button></div>';
+    }).join('') : '<div class="empty">Aún no has apuntado ingresos ni retiradas.</div>';
+  }
+  $('cFecha').value = today();
+  $('cAdd').onclick = function(){
+    var imp = num($('cImporte').value), fecha = $('cFecha').value || today();
+    if (!(imp>0)){ $('cMsg').textContent = 'Pon un importe válido.'; $('cImporte').focus(); return; }
+    movs.push({id:Date.now()*1000+(idSeq++ % 1000), fecha:fecha, tipo:$('cTipo').value, importe:imp, nota:$('cNota').value.trim()});
+    saveMovs(); $('cImporte').value = ''; $('cNota').value = ''; $('cMsg').textContent = 'Guardado.'; render();
+  };
+  $('cLista').onclick = function(e){
+    var id = e.target.getAttribute('data-mdel'); if (!id) return;
+    if (confirm('¿Borrar este movimiento?')){ movs = movs.filter(function(m){ return String(m.id)!==id; }); saveMovs(); render(); }
+  };
+  $('cBtnCsv').onclick = function(){
+    var rows = ['fecha;tipo;importe;nota'].concat(movs.slice().sort(function(a,b){ return a.fecha<b.fecha?-1:1; }).map(function(m){
+      return [m.fecha, m.tipo, String(m.importe).replace('.',','), '"'+String(m.nota||'').replace(/"/g,'""')+'"'].join(';');
+    }));
+    download('ingresos-retiradas.csv', '\ufeff'+rows.join('\n'), 'text/csv');
+  };
+  var COLM = {fecha:['fecha','dia'], tipo:['tipo','movimiento'], importe:['importe','cantidad','monto'], nota:['nota','concepto','descripcion']};
+  function importarMovs(texto){
+    var lineas = String(texto).replace(/^\ufeff/,'').split(/\r?\n/).filter(function(l){ return l.trim(); });
+    if (lineas.length<2) return {error:'El archivo está vacío o solo tiene la cabecera.'};
+    var h0 = lineas[0], sep = h0.indexOf('\t')>-1 ? '\t' : (h0.indexOf(';')>-1 ? ';' : ',');
+    var cab = partirLinea(h0, sep).map(quitaAcentos), idx = {};
+    Object.keys(COLM).forEach(function(k){ for (var i=0;i<cab.length;i++){ if (COLM[k].indexOf(cab[i])>-1){ idx[k]=i; break; } } });
+    if (idx.fecha===undefined || idx.tipo===undefined || idx.importe===undefined) return {error:'No encuentro las columnas fecha, tipo e importe en la primera fila.'};
+    var nuevos=0, dup=0, errores=[];
+    for (var n=1;n<lineas.length;n++){
+      var c = partirLinea(lineas[n], sep), g = function(k){ return idx[k]===undefined ? '' : (c[idx[k]]||''); };
+      var t = quitaAcentos(g('tipo')), tipo = /^(ing|dep|recarga|add)/.test(t) ? 'ingreso' : (/^(ret|with|cobro|sac)/.test(t) ? 'retirada' : '');
+      var imp = Math.abs(num(g('importe'))), fecha = leerPie(g('fecha')).fecha, nota = g('nota');
+      if (!tipo){ errores.push('Fila '+(n+1)+': tipo no reconocido ("'+g('tipo')+'")'); continue; }
+      if (!(imp>0)){ errores.push('Fila '+(n+1)+': importe no válido'); continue; }
+      if (!fecha){ errores.push('Fila '+(n+1)+': fecha no válida ("'+g('fecha')+'")'); continue; }
+      if (movs.some(function(m){ return m.fecha===fecha && m.tipo===tipo && m.importe===imp && (m.nota||'')===nota; })){ dup++; continue; }
+      movs.push({id:Date.now()*1000+(idSeq++ % 1000), fecha:fecha, tipo:tipo, importe:imp, nota:nota}); nuevos++;
+    }
+    saveMovs();
+    return {nuevos:nuevos, dup:dup, errores:errores};
+  }
+  $('cBtnImp').onclick = function(){ $('cCsvFile').click(); };
+  $('cCsvFile').onchange = function(e){
+    var f = e.target.files[0]; if (!f) return;
+    var r = new FileReader();
+    r.onload = function(){
+      var res = importarMovs(r.result);
+      if (res.error) $('cImpMsg').textContent = res.error;
+      else {
+        var m = 'Importados '+res.nuevos+(res.nuevos===1?' movimiento.':' movimientos.');
+        if (res.dup) m += '\n'+res.dup+(res.dup===1?' ya existía y se omitió.':' ya existían y se omitieron.');
+        if (res.errores.length) m += '\n'+res.errores.length+' filas con problemas, no importadas:\n'+res.errores.slice(0,6).join('\n');
+        $('cImpMsg').textContent = m;
+      }
+      render();
+    };
+    r.readAsText(f, 'utf-8'); e.target.value = '';
   };
 
   // ---------- Pestañas ----------
-  var TABS = ['resumen','anadir','periodos','apuestas','ajustes'];
+  var TABS = ['resumen','anadir','periodos','apuestas','caja','ajustes'];
   function irTab(id){
     if (TABS.indexOf(id)<0) id = 'resumen';
     TABS.forEach(function(t){

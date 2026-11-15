@@ -203,6 +203,9 @@ header,main{position:relative;z-index:1}
   <div class="grid" style="margin-top:0"><div class="stat"><div class="lbl">Total ingresado</div><div class="val" id="cIng">0,00 €</div></div><div class="stat"><div class="lbl">Total retirado</div><div class="val" id="cRet">0,00 €</div></div></div>
   <div class="stat" style="margin-top:8px"><div class="lbl">Saldo estimado en la casa</div><div class="val" id="cSaldo">0,00 €</div></div>
   <p class="hint">Saldo estimado = ingresos − retiradas + neto de las apuestas − lo que tienes en juego. Compáralo con tu saldo real: si no coincide, falta algún ingreso, retirada o apuesta.</p>
+  <label for="cReal" style="margin-top:10px">Saldo real de la casa (el que ves en su app)</label>
+  <div class="row"><input id="cReal" inputmode="decimal" placeholder="Ej. 189,50"><button class="sec" id="cRealBtn" type="button">Comparar</button></div>
+  <div class="status" id="cDif" style="white-space:pre-line"></div>
 </section>
 <h2>Añadir movimiento</h2>
 <section class="card">
@@ -973,10 +976,39 @@ header,main{position:relative;z-index:1}
     bets.forEach(function(b){ neto += netoDe(b); if (b.estado==='encurso') juego += b.importe; });
     return Math.round((t.ing - t.ret + neto - juego)*100)/100;
   }
+  var REALKEY = 'jp_saldo_real', real = null;
+  try { real = JSON.parse(localStorage.getItem(REALKEY) || 'null'); } catch(e){ real = null; }
+  function renderDif(){
+    var el = $('cDif');
+    if (!real){ el.textContent = ''; return; }
+    var sa = saldoEstimado(), d = Math.round((real.v - sa)*100)/100, abs = eur(Math.abs(d));
+    var cab = 'Saldo real que apuntaste el '+fmtDia(real.f)+': '+eur(real.v)+'.';
+    if (Math.abs(d) < 0.005){ el.innerHTML = cab+'\n<span class="pos">✓ Cuadra con el estimado.</span>'; return; }
+    if (d > 0){
+      el.innerHTML = cab+'\nTe faltan <b>'+abs+'</b> en lo apuntado: en la casa tienes más de lo que calculo. Suele ser un ingreso o un saldo inicial sin apuntar, un bono o una apuesta sin meter.\n<button type="button" class="sec" data-aj="ingreso" data-imp="'+Math.abs(d)+'" style="margin-top:8px">Apuntar '+abs+' como ingreso (ajuste)</button>';
+    } else {
+      el.innerHTML = cab+'\nTienes <b>'+abs+'</b> menos de lo que calculo. Suele ser una retirada sin apuntar o una apuesta sin meter.\n<button type="button" class="sec" data-aj="retirada" data-imp="'+Math.abs(d)+'" style="margin-top:8px">Apuntar '+abs+' como retirada (ajuste)</button>';
+    }
+  }
+  if (real) $('cReal').value = String(real.v).replace('.',',');
+  $('cRealBtn').onclick = function(){
+    var t = $('cReal').value.trim();
+    if (!t){ $('cDif').textContent = 'Escribe tu saldo real.'; return; }
+    real = {v: num(t), f: today()};
+    try { localStorage.setItem(REALKEY, JSON.stringify(real)); } catch(e){}
+    renderDif();
+  };
+  $('cDif').onclick = function(e){
+    var tipo = e.target.getAttribute('data-aj'); if (!tipo) return;
+    var imp = parseFloat(e.target.getAttribute('data-imp'));
+    movs.push({id:Date.now()*1000+(idSeq++ % 1000), fecha:today(), tipo:tipo, importe:imp, nota:'Ajuste de saldo'});
+    saveMovs(); render();
+  };
   function renderCaja(){
     var t = totalesMov(movs), sa = saldoEstimado();
     $('cIng').textContent = eur(t.ing); $('cRet').textContent = eur(t.ret);
     $('cSaldo').textContent = eur(sa); $('cSaldo').className = 'val '+(sa<0?'neg':'');
+    renderDif();
     var M = {};
     movs.forEach(function(m){ var k=m.fecha.slice(0,7), o = M[k] || (M[k]={ing:0,ret:0,neto:0}); if (m.tipo==='ingreso') o.ing += m.importe; else o.ret += m.importe; });
     bets.forEach(function(b){ var d = diaDe(b); if (!d) return; var k=d.slice(0,7), o = M[k] || (M[k]={ing:0,ret:0,neto:0}); o.neto += netoDe(b); });
